@@ -1,2 +1,3 @@
 *.jar
 *.bin
+app/src/test/java/com/voodoo/aquasmart/ExampleUnitTest.java
