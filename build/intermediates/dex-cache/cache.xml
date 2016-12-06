@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        is-multidex="false"
+        jar="E:\Work\Android\aquaSmart\app\build\intermediates\incremental-classes\debug\instant-run-bootstrap.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="23.0.3"
+        sha1="988ed4831b82f2cd5c6a3e6c917e5167ec535fed">
+        <dex dex="E:\Work\Android\aquaSmart\app\build\intermediates\pre-dexed\debug\instant-run-bootstrap_742e2581bfcc6e1d9e994fe57eb139456461b98d.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="E:\Work\Android\aquaSmart\app\build\intermediates\incremental-runtime-classes\debug\instant-run.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="23.0.3"
+        sha1="5d6d49951ac9ec0fb0ad2e4d9e4cfe4686ea7645">
+        <dex dex="E:\Work\Android\aquaSmart\app\build\intermediates\pre-dexed\debug\instant-run_479841618eb7472597ba9ccdaa1ad80994a0b7d7.jar" />
+    </item>
+
+</items>
