@@ -5,32 +5,6 @@
     android:layout_height="match_parent"
     android:background="@layout/border">
 
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#770000ff">
-
-        <TextView
-
-            android:text="TextView"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="10dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textAlignment="center"
-            android:id="@+id/tvTitle"
-            android:layout_weight="1"
-            android:textSize="20sp"
-            android:textColor="#ffff00"
-            android:shadowDx="3"
-            android:shadowDy="3"
-            android:shadowRadius="2"
-            android:shadowColor="#000000"
-            android:layout_centerHorizontal="true"
-            android:layout_centerVertical="true"/>
-
-    </RelativeLayout>
-
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"

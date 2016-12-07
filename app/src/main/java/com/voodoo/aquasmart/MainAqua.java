@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -38,6 +39,7 @@ public class MainAqua extends Activity {
     private final String ATTRIBUTE_TIME_START = "tStart";
     private final String ATTRIBUTE_TIME_STOP = "tStop";
 
+    ListView lvMain;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,28 +48,20 @@ public class MainAqua extends Activity {
         tvDate = (TextView) findViewById(R.id.tvDate);
 
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
-                "dd.MM.yy HH:mm:ss a", Locale.getDefault());
+                "dd.MM.yy   HH:mm:ss", Locale.getDefault());
         tvDate.setText(simpleDateFormat.format(Calendar.getInstance().getTime()));
 
         // находим список
-        ListView lvMain = (ListView) findViewById(R.id.lvPeripherial);
+        lvMain = (ListView) findViewById(R.id.lvPeripherial);
 
-        // создаем адаптер
-        ArrayList<Map<String, Object>> data = new ArrayList<>(
-                names.length);
-        Map<String, Object> m;
-        for (int i = 0; i < names.length; i++) {
-            m = new HashMap<>();
-            m.put(ATTRIBUTE_TITLE,  names[i]);
-
-            m.put(ATTRIBUTE_TIME_START, start[i]);
-            m.put(ATTRIBUTE_TIME_STOP, stop[i]);
-            data.add(m);
-        }
-        String[] from = {ATTRIBUTE_TITLE, ATTRIBUTE_TIME_START, ATTRIBUTE_TIME_STOP};
-        int[] to = {R.id.tvTitle, R.id.tvStart, R.id.tvStop};
-        SimpleAdapter sAdapter = new SimpleAdapter(this, data, R.layout.peripherial, from, to);
-        lvMain.setAdapter(sAdapter);
+        listUpdate();
+        //==========================================================
+        lvMain.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View view,
+                                    int position, long id) {
+                dialog_peripherial(position);
+            }
+        });
 
         tvTemp = (TextView) findViewById(R.id.tvTemp);
         tvTempS = (TextView) findViewById(R.id.tvTempS);
@@ -100,6 +94,95 @@ public class MainAqua extends Activity {
         tvDayLight = (TextView) findViewById(R.id.tvLightDay);
         tvNightLight = (TextView) findViewById(R.id.tvLightNight);
 
+    }
+    //==============================================================================================
+    void listUpdate()
+    {
+        ArrayList<Map<String, Object>> data = new ArrayList<>(
+                names.length);
+        Map<String, Object> m;
+        for (int i = 0; i < names.length; i++) {
+            m = new HashMap<>();
+            m.put(ATTRIBUTE_TITLE,  names[i]);
+
+            m.put(ATTRIBUTE_TIME_START, start[i]);
+            m.put(ATTRIBUTE_TIME_STOP, stop[i]);
+            data.add(m);
+        }
+        String[] from = {ATTRIBUTE_TITLE, ATTRIBUTE_TIME_START, ATTRIBUTE_TIME_STOP};
+        int[] to = {R.id.tvTitle, R.id.tvStart, R.id.tvStop};
+        SimpleAdapter sAdapter = new SimpleAdapter(this, data, R.layout.peripherial, from, to);
+        lvMain.setAdapter(sAdapter);
+    }
+    //==============================================================================================
+    public void dialog_peripherial(final int aSelected)
+    {
+        final AlertDialog.Builder popDialog = new AlertDialog.Builder(this);
+        final LayoutInflater inflater = (LayoutInflater) this.getSystemService(LAYOUT_INFLATER_SERVICE);
+        final View Viewlayout = inflater.inflate(R.layout.periph_set, (ViewGroup) findViewById(R.id.rl));
+
+        final TextView pStart = (TextView)Viewlayout.findViewById(R.id.tvStart);
+        final TextView pStop  = (TextView)Viewlayout.findViewById(R.id.tvStop);
+
+        pStart.setText(start[aSelected]);
+
+        pStart.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                int hour, minute;
+                hour = Integer.valueOf(pStart.getText().toString().substring(0, 2));
+                minute = Integer.valueOf(pStart.getText().toString().substring(3));
+
+                TimePickerDialog mTimePicker;
+                mTimePicker = new TimePickerDialog(MainAqua.this, new TimePickerDialog.OnTimeSetListener() {
+                    @Override
+                    public void onTimeSet(TimePicker timePicker, int selectedHour, int selectedMinute) {
+                        start[aSelected] = String.format("%02d",selectedHour) + ":" + String.format("%02d",selectedMinute);
+                        pStart.setText(start[aSelected]);
+                    }
+                }, hour, minute, true);//Yes 24 hour time
+                mTimePicker.setTitle("Select Time start");
+                mTimePicker.show();
+            }
+        });
+
+        pStop.setText(stop[aSelected]);
+
+        pStop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                int hour, minute;
+                hour = Integer.valueOf(pStop.getText().toString().substring(0, 2));
+                minute = Integer.valueOf(pStop.getText().toString().substring(3));
+
+                TimePickerDialog mTimePicker;
+                mTimePicker = new TimePickerDialog(MainAqua.this, new TimePickerDialog.OnTimeSetListener() {
+                    @Override
+                    public void onTimeSet(TimePicker timePicker, int selectedHour, int selectedMinute) {
+                        stop[aSelected] = String.format("%02d",selectedHour) + ":" + String.format("%02d",selectedMinute);
+                        pStop.setText(stop[aSelected]);
+                    }
+                }, hour, minute, true);//Yes 24 hour time
+                mTimePicker.setTitle("Select Time stop");
+                mTimePicker.show();
+            }
+        });
+
+        popDialog.setIcon(android.R.drawable.star_big_on);
+        popDialog.setTitle(names[aSelected]);
+        popDialog.setView(Viewlayout);
+
+        popDialog.setPositiveButton("OK",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        listUpdate();
+                        dialog.dismiss();
+                    }
+                });
+        popDialog.create();
+        popDialog.show();
     }
 
     //==============================================================================================
