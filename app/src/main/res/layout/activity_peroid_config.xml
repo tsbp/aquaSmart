@@ -1,0 +1,77 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:id="@+id/rl"
+    android:background="#bad3c6">
+
+    <TextView
+        android:text="Time"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/timeHead"
+        android:gravity="center_vertical|center_horizontal"/>
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:inputType="time"
+        android:id="@+id/setTime"
+        android:layout_below="@+id/timeHead"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:textSize="40dp"
+        android:gravity="center"
+        android:textColor="#001aff">
+        <requestFocus>
+        </requestFocus>
+    </TextView>
+
+    <TextView
+        android:text="Light"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/tempHead"
+        android:layout_below="@+id/setTime"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:gravity="center_vertical|center_horizontal"
+        android:layout_marginTop="10dp" />
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal"
+        android:ems="10"
+        android:id="@+id/setTemp"
+        android:layout_below="@+id/tempHead"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:textSize="40dp"
+        android:gravity="center"
+        android:textColor="#04741a" />
+
+    <!--Button
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="OK"
+        android:id="@+id/okBtnPeriod"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"  /-->
+
+    <SeekBar
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/seekBarTemp"
+        android:layout_below="@+id/setTemp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginBottom="0dp"/>
+
+
+</RelativeLayout>
