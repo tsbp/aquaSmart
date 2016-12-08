@@ -52,13 +52,14 @@ public class MainAqua extends Activity implements OnReceiveListener{
     private final String ATTRIBUTE_TIME_START = "tStart";
     private final String ATTRIBUTE_TIME_STOP = "tStop";
 
+    private final byte CMD_GET_STATE = (byte)0x10;
+    private final byte CMD_GET_CFG   = (byte)0x20;
+
     private Timer mTimer;
     private MyTimerTask mMyTimerTask;
 
     public static UDPProcessor udpProcessor ;
-    InetAddress ipMaster = null;
-
-    byte [] broadcastIP;
+    InetAddress deviceIP = null, broadcastIP;
 
     ListView lvMain;
     @Override
@@ -74,9 +75,13 @@ public class MainAqua extends Activity implements OnReceiveListener{
         udpProcessor.setOnReceiveListener(this);
         udpProcessor.start();
 
-        broadcastIP = getBroadcastIP4AsBytes();
+        byte [] bcIP = getBroadcastIP4AsBytes();
+        try {
+            broadcastIP = InetAddress.getByAddress(bcIP);
+        }
+        catch (UnknownHostException e){}
 
-        getState();
+        sendCmd(CMD_GET_STATE, broadcastIP);
 
         // находим список
         lvMain = (ListView) findViewById(R.id.lvPeripherial);
@@ -132,27 +137,58 @@ public class MainAqua extends Activity implements OnReceiveListener{
                 dialog_wifi();
             }
         });
+
+        Button btnLoad = (Button) findViewById(R.id.btnLoad);
+        //================================================
+        btnLoad.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                if(deviceIP != null)
+                    sendCmd(CMD_GET_CFG, deviceIP);
+                else
+                    sendCmd(CMD_GET_STATE, broadcastIP);
+            }
+        });
     }
     //==============================================================================================
-    void getState()
+    void sendCmd(byte aCmd, InetAddress aIP)
     {
-        try {
+        if(aIP != null) {
+
             byte[] pack = new byte[1];
-            pack[0] = (byte) 0x10;
-            InetAddress i = InetAddress.getByAddress(broadcastIP);
-            udpSend(pack, i);
+            switch (aCmd) {
+
+                case CMD_GET_STATE:
+                    pack = new byte[1];
+                    pack[0] = (byte) 0x10;
+                    break;
+
+                case CMD_GET_CFG:
+                    break;
+            }
+            udpSend(pack, aIP);
         }
-        catch (UnknownHostException e){}
+    }
+    //==============================================================================================
+    byte crcCalc(byte [] aBuf)
+    {
+        short sum = 0;
+        for(int i = 0; i < aBuf.length; i++)
+            sum += (short)aBuf[i];
+       return  (byte) ((byte)(sum >> 8) +(byte)( sum&((byte) 0xff)));
     }
     //==============================================================================================
     byte[] formUdpPackage(byte [] aByte)
     {
         byte [] p = new byte[aByte.length + 3];
         p[0] = (byte) (aByte.length & 0xff);
-        p[1] = (byte) ((aByte.length >> 8) & 0xff);
+        p[1] = (byte) (aByte.length >> 8);
         for(int i = 0; i < aByte.length; i++)
             p[i+2] = aByte[i];
         // add crc
+        short sum = 0;
+        for(int i = 0; i < p.length; i++)
+            sum += (short)p[i];
+        p[p.length - 1] = crcCalc(p);
         return p;
     }
     //==============================================================================================
@@ -166,7 +202,18 @@ public class MainAqua extends Activity implements OnReceiveListener{
     public void onFrameReceived(InetAddress ip, IDataFrame frame)
     {
         byte[] in = frame.getFrameData();
+        if(crcCalc(in) == in[in.length - 1])
+        {
+            switch (in[2])
+            {
+                case CMD_GET_STATE:
+                    if(deviceIP == null) deviceIP = ip;
+                    break;
 
+                case CMD_GET_CFG:
+                    break;
+            }
+        }
     }
     //==============================================================================================
     void dialog_wifi() {
@@ -424,7 +471,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    getState();
+                    sendCmd(CMD_GET_STATE, deviceIP);
                     tvDate.setText(strDate);
                     int cur = getMinutes(strDate.substring(0, 5));
                     int day = getMinutes(tvDayTime.getText().toString());
@@ -435,6 +482,12 @@ public class MainAqua extends Activity implements OnReceiveListener{
                 }
             });
         }
+    }
+    //==============================================================================================
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        udpProcessor.stop();
     }
 
 }

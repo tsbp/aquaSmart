@@ -236,14 +236,23 @@
                 android:background="@drawable/wifi"
                 android:layout_marginLeft="10dp"
                 android:layout_centerVertical="true"/>
-            <!--Button
-                android:id="@+id/btn"
+
+            <Button
+                android:id="@+id/btnLoad"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
-                android:text="Button"
-                android:layout_marginRight="10dp"
+                android:background="@drawable/bload"
                 android:layout_centerVertical="true"
-                android:layout_alignParentEnd="true" /-->
+                android:layout_marginRight="10dp"
+                android:layout_alignParentEnd="true" />
+
+            <Button
+                android:id="@+id/btnSave"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:background="@drawable/bsave"
+                android:layout_centerVertical="true"
+                android:layout_centerHorizontal="true"/>
 
         </RelativeLayout>
     </LinearLayout>
