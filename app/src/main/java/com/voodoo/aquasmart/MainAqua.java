@@ -152,21 +152,18 @@ public class MainAqua extends Activity implements OnReceiveListener{
     //==============================================================================================
     void sendCmd(byte aCmd, InetAddress aIP)
     {
-        if(aIP != null) {
+        byte[] pack = new byte[1];
+        switch (aCmd) {
 
-            byte[] pack = new byte[1];
-            switch (aCmd) {
+            case CMD_GET_STATE:
+                pack = new byte[1];
+                pack[0] = (byte) 0x10;
+                break;
 
-                case CMD_GET_STATE:
-                    pack = new byte[1];
-                    pack[0] = (byte) 0x10;
-                    break;
-
-                case CMD_GET_CFG:
-                    break;
-            }
-            udpSend(pack, aIP);
+            case CMD_GET_CFG:
+                break;
         }
+        if(aIP != null) udpSend(pack, aIP);
     }
     //==============================================================================================
     byte crcCalc(byte [] aBuf)
