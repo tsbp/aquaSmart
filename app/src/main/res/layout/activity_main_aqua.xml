@@ -4,7 +4,6 @@
     android:id="@+id/activity_main_aqua"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
     android:background="@drawable/mainbg"
     tools:context="com.voodoo.aquasmart.MainAqua">
 
@@ -19,7 +18,7 @@
             android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1.5"
+            android:layout_weight="3"
             android:layout_marginBottom="5dp"
             >
                 <LinearLayout
@@ -94,7 +93,7 @@
                     android:layout_height="0dp"
                     android:layout_weight="2"
                     android:layout_margin="5dp"
-                    android:id="@+id/imgLight"
+                    android:id="@+id/imgPeroid"
                     />
                 <LinearLayout
                     android:id="@+id/llDay"
@@ -203,7 +202,7 @@
             android:id="@+id/tvDate"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="0.5"
+            android:layout_weight="1"
             android:background="@layout/border"
             android:gravity="center"
             android:text="06.12.16 13:07"
@@ -216,19 +215,35 @@
             android:layout_marginBottom="5dp"/>
 
             <ListView
-
                 android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:id="@+id/lvPeripherial"
-                android:layout_weight="2">
+                android:layout_weight="4"
+                android:background="@layout/border">
 
             </ListView>
 
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.5">
+            android:layout_height="0dp"
+            android:layout_weight="1.5">
+
+            <Button
+                android:id="@+id/btnWifi"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:background="@drawable/wifi"
+                android:layout_marginLeft="10dp"
+                android:layout_centerVertical="true"/>
+            <!--Button
+                android:id="@+id/btn"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:text="Button"
+                android:layout_marginRight="10dp"
+                android:layout_centerVertical="true"
+                android:layout_alignParentEnd="true" /-->
 
         </RelativeLayout>
     </LinearLayout>

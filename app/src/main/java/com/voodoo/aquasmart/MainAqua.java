@@ -3,13 +3,18 @@ package com.voodoo.aquasmart;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.TimePickerDialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -18,6 +23,8 @@ import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -27,9 +34,15 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainAqua extends Activity {
+import com.voodoo.aquasmart.UDPProcessor.OnReceiveListener;
+
+import static com.voodoo.aquasmart.IPHelper.getBroadcastIP4AsBytes;
+import static com.voodoo.aquasmart.IPHelper.getLocalIP4AsBytes;
+
+public class MainAqua extends Activity implements OnReceiveListener{
 
     TextView tvTemp, tvTempS, tvDate, tvDayTime, tvNightTime, tvDayLight, tvNightLight;
+    ImageView imgDayPeriod;
 
     String[] names = { "Компрессор", "Фильтр"};
     String[] start = { "12:00", "14:24"};
@@ -39,17 +52,31 @@ public class MainAqua extends Activity {
     private final String ATTRIBUTE_TIME_START = "tStart";
     private final String ATTRIBUTE_TIME_STOP = "tStop";
 
+    private Timer mTimer;
+    private MyTimerTask mMyTimerTask;
+
+    public static UDPProcessor udpProcessor ;
+    InetAddress ipMaster = null;
+
+    byte [] broadcastIP;
+
     ListView lvMain;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main_aqua);
 
         tvDate = (TextView) findViewById(R.id.tvDate);
+        imgDayPeriod = (ImageView) findViewById(R.id.imgPeroid);
 
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
-                "dd.MM.yy   HH:mm:ss", Locale.getDefault());
-        tvDate.setText(simpleDateFormat.format(Calendar.getInstance().getTime()));
+        udpProcessor = new UDPProcessor(7373);
+        udpProcessor.setOnReceiveListener(this);
+        udpProcessor.start();
+
+        broadcastIP = getBroadcastIP4AsBytes();
+
+        getState();
 
         // находим список
         lvMain = (ListView) findViewById(R.id.lvPeripherial);
@@ -94,6 +121,71 @@ public class MainAqua extends Activity {
         tvDayLight = (TextView) findViewById(R.id.tvLightDay);
         tvNightLight = (TextView) findViewById(R.id.tvLightNight);
 
+        mTimer = new Timer();
+        mMyTimerTask = new MyTimerTask();
+        mTimer.schedule(mMyTimerTask, 1000, 1000);
+
+        Button wifi = (Button) findViewById(R.id.btnWifi);
+        //================================================
+        wifi.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                dialog_wifi();
+            }
+        });
+    }
+    //==============================================================================================
+    void getState()
+    {
+        try {
+            byte[] pack = new byte[1];
+            pack[0] = (byte) 0x10;
+            InetAddress i = InetAddress.getByAddress(broadcastIP);
+            udpSend(pack, i);
+        }
+        catch (UnknownHostException e){}
+    }
+    //==============================================================================================
+    byte[] formUdpPackage(byte [] aByte)
+    {
+        byte [] p = new byte[aByte.length + 3];
+        p[0] = (byte) (aByte.length & 0xff);
+        p[1] = (byte) ((aByte.length >> 8) & 0xff);
+        for(int i = 0; i < aByte.length; i++)
+            p[i+2] = aByte[i];
+        // add crc
+        return p;
+    }
+    //==============================================================================================
+    void udpSend(byte[] aByte, InetAddress ip)
+    {
+        formUdpPackage(aByte);
+        DataFrame df = new DataFrame(formUdpPackage(aByte));
+        udpProcessor.send(ip,df);
+    }
+    //==============================================================================================
+    public void onFrameReceived(InetAddress ip, IDataFrame frame)
+    {
+        byte[] in = frame.getFrameData();
+
+    }
+    //==============================================================================================
+    void dialog_wifi() {
+        final AlertDialog.Builder popDialog = new AlertDialog.Builder(this);
+        final LayoutInflater inflater = (LayoutInflater) this.getSystemService(LAYOUT_INFLATER_SERVICE);
+        final View Viewlayout = inflater.inflate(R.layout.dialog_wifi, (ViewGroup) findViewById(R.id.rl));
+
+        popDialog.setIcon(R.drawable.wifi_small);
+        popDialog.setTitle("Установки wifi");
+        popDialog.setView(Viewlayout);
+
+        popDialog.setPositiveButton("OK",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+        popDialog.create();
+        popDialog.show();
     }
     //==============================================================================================
     void listUpdate()
@@ -170,7 +262,8 @@ public class MainAqua extends Activity {
             }
         });
 
-        popDialog.setIcon(android.R.drawable.star_big_on);
+        if(aSelected == 0)  popDialog.setIcon(R.drawable.air);
+        else                popDialog.setIcon(R.drawable.filter);
         popDialog.setTitle(names[aSelected]);
         popDialog.setView(Viewlayout);
 
@@ -230,9 +323,9 @@ public class MainAqua extends Activity {
         if(aP)         pTemp.setText(tvDayLight.getText());
         else  pTemp.setText(tvNightLight.getText());
 
-        popDialog.setIcon(android.R.drawable.star_big_on);
-        if (aP) popDialog.setTitle("Установка дня");
-        else    popDialog.setTitle("Установка ночи");
+
+        if (aP) {popDialog.setTitle("Установка дня");  popDialog.setIcon(R.drawable.day);}
+        else    {popDialog.setTitle("Установка ночи"); popDialog.setIcon(R.drawable.night);}
         popDialog.setView(Viewlayout);
 //
         SeekBar seek = (SeekBar) Viewlayout.findViewById(R.id.seekBarTemp);
@@ -309,6 +402,39 @@ public class MainAqua extends Activity {
                 });
         popDialog.create();
         popDialog.show();
+    }
+
+    //==============================================================================================
+    int getMinutes(String aStr)
+    {
+        int minutes = 60 * Integer.valueOf(aStr.substring(0, 2));
+        minutes    +=      Integer.valueOf((aStr).substring(3));
+        return minutes;
+    }
+    //==============================================================================================
+    class MyTimerTask extends TimerTask {
+
+        @Override
+        public void run() {
+            Calendar calendar = Calendar.getInstance();
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
+                    "HH:mm:ss", Locale.getDefault());
+            final String strDate = simpleDateFormat.format(calendar.getTime());
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    getState();
+                    tvDate.setText(strDate);
+                    int cur = getMinutes(strDate.substring(0, 5));
+                    int day = getMinutes(tvDayTime.getText().toString());
+                    int nig = getMinutes(tvNightTime.getText().toString());
+                    if      (cur >= day && cur >= nig)   imgDayPeriod.setImageResource(R.drawable.moon);
+                    else if (cur >= day)                 imgDayPeriod.setImageResource(R.drawable.sun);
+                    else                                 imgDayPeriod.setImageResource(R.drawable.moon);
+                }
+            });
+        }
     }
 
 }
