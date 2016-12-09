@@ -52,7 +52,9 @@ public class MainAqua extends Activity implements OnReceiveListener{
     private final String ATTRIBUTE_TIME_START = "tStart";
     private final String ATTRIBUTE_TIME_STOP = "tStop";
 
-    private final byte CMD_GET_STATE = (byte)0x10;
+    private final byte CMD_GET_STATE     = (byte)0x10;
+    private final byte CMD_GET_STATE_ANS = (byte)0x11;
+
     private final byte CMD_GET_CFG   = (byte)0x20;
 
     private Timer mTimer;
@@ -166,26 +168,23 @@ public class MainAqua extends Activity implements OnReceiveListener{
         if(aIP != null) udpSend(pack, aIP);
     }
     //==============================================================================================
-    byte crcCalc(byte [] aBuf)
+    byte crcCalc(byte [] aBuf, int aL)
     {
-        short sum = 0;
-        for(int i = 0; i < aBuf.length; i++)
-            sum += (short)aBuf[i];
-       return  (byte) ((byte)(sum >> 8) +(byte)( sum&((byte) 0xff)));
+        int sum = 0;
+        for(int i = 0; i < aL; i++)
+            sum += (int) (aBuf[i]) & 0xff;
+       return  (byte) ((byte)(sum >> 8) + (byte)( sum &((byte) 0xff)));
     }
     //==============================================================================================
     byte[] formUdpPackage(byte [] aByte)
     {
-        byte [] p = new byte[aByte.length + 3];
-        p[0] = (byte) (aByte.length & 0xff);
-        p[1] = (byte) (aByte.length >> 8);
+        byte [] p = new byte[aByte.length + 2];
+        p[0] = (byte) aByte.length;
+
         for(int i = 0; i < aByte.length; i++)
-            p[i+2] = aByte[i];
+            p[i+1] = aByte[i];
         // add crc
-        short sum = 0;
-        for(int i = 0; i < p.length; i++)
-            sum += (short)p[i];
-        p[p.length - 1] = crcCalc(p);
+        p[p.length - 1] = crcCalc(p, p.length - 1);
         return p;
     }
     //==============================================================================================
@@ -199,12 +198,21 @@ public class MainAqua extends Activity implements OnReceiveListener{
     public void onFrameReceived(InetAddress ip, IDataFrame frame)
     {
         byte[] in = frame.getFrameData();
-        if(crcCalc(in) == in[in.length - 1])
+        if(crcCalc(in, in[0]) == in[in.length - 1])
         {
-            switch (in[2])
+            switch (in[1])
             {
-                case CMD_GET_STATE:
+                case CMD_GET_STATE_ANS:
                     if(deviceIP == null) deviceIP = ip;
+
+                    tvDate.setText(in[2] + ":" + in[3] + ":" + in[4]);
+                    //tvTemp.setText();
+                    int cur = in[2] * 60 + in[3];
+                    int day = getMinutes(tvDayTime.getText().toString());
+                    int nig = getMinutes(tvNightTime.getText().toString());
+                    if      (cur >= day && cur >= nig)   imgDayPeriod.setImageResource(R.drawable.moon);
+                    else if (cur >= day)                 imgDayPeriod.setImageResource(R.drawable.sun);
+                    else                                 imgDayPeriod.setImageResource(R.drawable.moon);
                     break;
 
                 case CMD_GET_CFG:
@@ -460,22 +468,15 @@ public class MainAqua extends Activity implements OnReceiveListener{
 
         @Override
         public void run() {
-            Calendar calendar = Calendar.getInstance();
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
-                    "HH:mm:ss", Locale.getDefault());
-            final String strDate = simpleDateFormat.format(calendar.getTime());
+//            Calendar calendar = Calendar.getInstance();
+//            SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
+//                    "HH:mm:ss", Locale.getDefault());
+//            final String strDate = simpleDateFormat.format(calendar.getTime());
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     sendCmd(CMD_GET_STATE, deviceIP);
-                    tvDate.setText(strDate);
-                    int cur = getMinutes(strDate.substring(0, 5));
-                    int day = getMinutes(tvDayTime.getText().toString());
-                    int nig = getMinutes(tvNightTime.getText().toString());
-                    if      (cur >= day && cur >= nig)   imgDayPeriod.setImageResource(R.drawable.moon);
-                    else if (cur >= day)                 imgDayPeriod.setImageResource(R.drawable.sun);
-                    else                                 imgDayPeriod.setImageResource(R.drawable.moon);
                 }
             });
         }
