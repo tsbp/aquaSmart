@@ -44,11 +44,15 @@ public class MainAqua extends Activity implements OnReceiveListener{
     TextView tvTemp, tvTempS, tvDate, tvDayTime, tvNightTime, tvDayLight, tvNightLight;
     ImageView imgDayPeriod;
 
-    String[] names = { "Компрессор", "Фильтр"};
-    String[] start = { "12:00", "14:24"};
-    String[] stop = { "16:00", "22:24"};
+    String[] names = { "Компрессор", "Фильтр", "Шаговик"};
+    String[] titles_start = { "Старт", "Старт", "Eat 1"};
+    String[] titles_end = { "Стоп", "Стоп", "Eat 2"};
+    String[] start = { "12:00", "14:24", "07:35"};
+    String[] stop = { "16:00", "22:24", "18:45"};
 
     private final String ATTRIBUTE_TITLE = "title";
+    private final String ATTRIBUTE_TITLE_START = "title_start";
+    private final String ATTRIBUTE_TITLE_END = "title_end";
     private final String ATTRIBUTE_TIME_START = "tStart";
     private final String ATTRIBUTE_TIME_STOP = "tStop";
 
@@ -170,7 +174,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
     //==============================================================================================
     byte crcCalc(byte [] aBuf, int aL)
     {
-        int sum = 0;
+        short sum = 0;
         for(int i = 0; i < aL; i++)
             sum += (int) (aBuf[i]) & 0xff;
        return  (byte) ((byte)(sum >> 8) + (byte)( sum &((byte) 0xff)));
@@ -206,7 +210,8 @@ public class MainAqua extends Activity implements OnReceiveListener{
                     if(deviceIP == null) deviceIP = ip;
 
                     tvDate.setText(in[2] + ":" + in[3] + ":" + in[4]);
-                    //tvTemp.setText();
+                    short tmp = (short)((in[5] & 0xff) | ((in[6] &0xff) << 8));
+                    tvTemp.setText((float)tmp/10 + "°");
                     int cur = in[2] * 60 + in[3];
                     int day = getMinutes(tvDayTime.getText().toString());
                     int nig = getMinutes(tvNightTime.getText().toString());
@@ -249,12 +254,14 @@ public class MainAqua extends Activity implements OnReceiveListener{
             m = new HashMap<>();
             m.put(ATTRIBUTE_TITLE,  names[i]);
 
+            m.put(ATTRIBUTE_TITLE_START, titles_start[i]);
+            m.put(ATTRIBUTE_TITLE_END, titles_end[i]);
             m.put(ATTRIBUTE_TIME_START, start[i]);
             m.put(ATTRIBUTE_TIME_STOP, stop[i]);
             data.add(m);
         }
-        String[] from = {ATTRIBUTE_TITLE, ATTRIBUTE_TIME_START, ATTRIBUTE_TIME_STOP};
-        int[] to = {R.id.tvTitle, R.id.tvStart, R.id.tvStop};
+        String[] from = {ATTRIBUTE_TITLE, ATTRIBUTE_TITLE_START, ATTRIBUTE_TITLE_END, ATTRIBUTE_TIME_START, ATTRIBUTE_TIME_STOP};
+        int[] to = {R.id.tvTitle, R.id.tvTitleStart, R.id.tvTitleStop, R.id.tvStart, R.id.tvStop};
         SimpleAdapter sAdapter = new SimpleAdapter(this, data, R.layout.peripherial, from, to);
         lvMain.setAdapter(sAdapter);
     }
@@ -267,6 +274,11 @@ public class MainAqua extends Activity implements OnReceiveListener{
 
         final TextView pStart = (TextView)Viewlayout.findViewById(R.id.tvStart);
         final TextView pStop  = (TextView)Viewlayout.findViewById(R.id.tvStop);
+
+        final TextView tStart = (TextView)Viewlayout.findViewById(R.id.tvTitleStartP);
+        tStart.setText(titles_start[aSelected]);
+        final TextView tStop  = (TextView)Viewlayout.findViewById(R.id.tvTitleStopP);
+        tStop.setText(titles_end[aSelected]);
 
         pStart.setText(start[aSelected]);
 
