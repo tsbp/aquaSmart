@@ -60,6 +60,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
     private final byte CMD_GET_STATE_ANS = (byte)0x11;
 
     private final byte CMD_GET_CFG   = (byte)0x20;
+    private final byte CMD_SET_CFG   = (byte)0x21;
 
     private Timer mTimer;
     private MyTimerTask mMyTimerTask;
@@ -154,11 +155,60 @@ public class MainAqua extends Activity implements OnReceiveListener{
                     sendCmd(CMD_GET_STATE, broadcastIP);
             }
         });
+
+        Button btnSave = (Button) findViewById(R.id.btnSave);
+        //================================================
+        btnSave.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                //if(deviceIP != null)
+                {
+                    sendCmd(CMD_SET_CFG, deviceIP);
+                }
+            }
+        });
+    }
+    //==============================================================================================
+    byte []  getCfgPack()
+    {
+        byte[]tmp = new byte[20];
+        byte[]ttmp = new byte[2];
+        //==== set temperature ==========
+        int a = (int)(Float.valueOf(tvTempS.getText().toString().replace("\u00b0","")) * 10);
+        tmp[0] = (byte)(a & 0xff);
+        tmp[1] = (byte)((a >> 8) & 0xff);
+        //======== light configs ==========
+        ttmp = getBytesfromTimeString(tvDayTime.getText().toString());
+        tmp[2] = ttmp[0];
+        tmp[3] = ttmp[1];
+        tmp[4] = Byte.valueOf((tvDayLight.getText().toString()).replace("%",""));
+        ttmp = getBytesfromTimeString(tvNightTime.getText().toString());
+        tmp[5] = ttmp[0];
+        tmp[6] = ttmp[1];
+        tmp[7] = Byte.valueOf((tvNightLight.getText().toString()).replace("%",""));
+        //======== peripherial configs ====
+        for(int i = 0; i < names.length; i++)
+        {
+            ttmp = getBytesfromTimeString(start[i]);
+            tmp[i*4 + 8] = ttmp[0];
+            tmp[i*4 + 9] = ttmp[1];
+            ttmp = getBytesfromTimeString(stop[i]);
+            tmp[i*4 + 10] = ttmp[0];
+            tmp[i*4 + 11] = ttmp[1];
+        }
+        return tmp;
+    }
+    //==============================================================================================
+    byte [] getBytesfromTimeString(String aStr)
+    {
+        byte [] tmp = new byte[2];
+        tmp[0] = Byte.valueOf(aStr.substring(0, 2));
+        tmp[1] = Byte.valueOf((aStr).substring(3));
+        return tmp;
     }
     //==============================================================================================
     void sendCmd(byte aCmd, InetAddress aIP)
     {
-        byte[] pack = new byte[1];
+        byte[] pack = null;
         switch (aCmd) {
 
             case CMD_GET_STATE:
@@ -166,10 +216,11 @@ public class MainAqua extends Activity implements OnReceiveListener{
                 pack[0] = (byte) 0x10;
                 break;
 
-            case CMD_GET_CFG:
+            case CMD_SET_CFG:
+                pack = getCfgPack();
                 break;
         }
-        if(aIP != null) udpSend(pack, aIP);
+        if(aIP != null && pack != null) udpSend(pack, aIP);
     }
     //==============================================================================================
     byte crcCalc(byte [] aBuf, int aL)
@@ -467,7 +518,6 @@ public class MainAqua extends Activity implements OnReceiveListener{
         popDialog.create();
         popDialog.show();
     }
-
     //==============================================================================================
     int getMinutes(String aStr)
     {
