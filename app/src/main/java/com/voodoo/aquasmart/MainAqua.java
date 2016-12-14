@@ -43,6 +43,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
 
     TextView tvTemp, tvTempS, tvDate, tvDayTime, tvNightTime, tvDayLight, tvNightLight;
     ImageView imgDayPeriod;
+    Button btnSave;
 
     String[] names = { "Компрессор", "Фильтр", "Шаговик"};
     String[] titles_start = { "Старт", "Старт", "Eat 1"};
@@ -105,8 +106,8 @@ public class MainAqua extends Activity implements OnReceiveListener{
 
         tvTemp = (TextView) findViewById(R.id.tvTemp);
         tvTempS = (TextView) findViewById(R.id.tvTempS);
-        tvTemp.setText("23.0\u00b0");
-        tvTempS.setText("22.5\u00b0");
+//        tvTemp.setText("23.0\u00b0");
+//        tvTempS.setText("22.5\u00b0");
 
         tvTempS.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -146,9 +147,9 @@ public class MainAqua extends Activity implements OnReceiveListener{
             }
         });
 
-        Button btnLoad = (Button) findViewById(R.id.btnLoad);
+        Button btnSync = (Button) findViewById(R.id.btnLoad);
         //================================================
-        btnLoad.setOnClickListener(new View.OnClickListener() {
+        btnSync.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 if(deviceIP != null)
                     sendCmd(CMD_GET_CFG, deviceIP);
@@ -157,7 +158,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
             }
         });
 
-        Button btnSave = (Button) findViewById(R.id.btnSave);
+        btnSave = (Button) findViewById(R.id.btnSave);
         //================================================
         btnSave.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -278,10 +279,32 @@ public class MainAqua extends Activity implements OnReceiveListener{
                 case CMD_GET_CFG_ANS: {
                     short a = (short) ((in[2] & 0xff) | ((in[3] & 0xff) << 8));
                     tvTempS.setText((float) a / 10 + "°");
+
+                    tvDayTime.setText(getTimeString(in[4], in[5]));
+                    tvDayLight.setText(in[6]);
+                    tvNightTime.setText(getTimeString(in[7], in[8]));
+                    tvNightLight.setText(in[9]);
+
+                    for(int i = 1; i < 3; i++)
+                    {
+                        start[i] = getTimeString(in[i * 4 + 9],  in[i * 4 + 10]);
+                        stop[i]  = getTimeString(in[i * 4 + 11], in[i * 4 + 12]);
+                    }
+                    listUpdate();
+
+                    btnSave.setVisibility(View.INVISIBLE);
                 }
                     break;
             }
         }
+    }
+    //==============================================================================================
+    String getTimeString(byte aHour, byte aMinute)
+    {
+        String a = "", b = "";
+        if(aHour < 10) a = "0";
+        if(aMinute < 10) b = "0";
+        return a + aHour + ":" + b + aMinute;
     }
     //==============================================================================================
     void dialog_wifi() {
@@ -354,6 +377,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
                     public void onTimeSet(TimePicker timePicker, int selectedHour, int selectedMinute) {
                         start[aSelected] = String.format("%02d",selectedHour) + ":" + String.format("%02d",selectedMinute);
                         pStart.setText(start[aSelected]);
+                        btnSave.setVisibility(View.VISIBLE);
                     }
                 }, hour, minute, true);//Yes 24 hour time
                 mTimePicker.setTitle("Select Time start");
@@ -377,6 +401,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
                     public void onTimeSet(TimePicker timePicker, int selectedHour, int selectedMinute) {
                         stop[aSelected] = String.format("%02d",selectedHour) + ":" + String.format("%02d",selectedMinute);
                         pStop.setText(stop[aSelected]);
+                        btnSave.setVisibility(View.VISIBLE);
                     }
                 }, hour, minute, true);//Yes 24 hour time
                 mTimePicker.setTitle("Select Time stop");
@@ -432,6 +457,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
                 mTimePicker = new TimePickerDialog(MainAqua.this, new TimePickerDialog.OnTimeSetListener() {
                     @Override
                     public void onTimeSet(TimePicker timePicker, int selectedHour, int selectedMinute) {
+                        btnSave.setVisibility(View.VISIBLE);
                         pTime.setText(String.format("%02d",selectedHour) + ":" + String.format("%02d",selectedMinute));
                     }
                 }, hour, minute, true);//Yes 24 hour time
@@ -457,6 +483,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser){
 
+                btnSave.setVisibility(View.VISIBLE);
                 pTemp.setText( progress + "%" );
             }
             public void onStartTrackingTouch(SeekBar arg0) {
@@ -505,6 +532,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
 
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser){
+                btnSave.setVisibility(View.VISIBLE);
                 String s = String.format("%2.1f", (0.1 * progress + 19));
                 s = s.replace(',','.');
                 delta.setText( s + "\u00b0");

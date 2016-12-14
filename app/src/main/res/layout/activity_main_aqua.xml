@@ -241,7 +241,7 @@
                 android:id="@+id/btnLoad"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
-                android:background="@drawable/bload"
+                android:background="@drawable/sync"
                 android:layout_centerVertical="true"
                 android:layout_marginRight="10dp"
                 android:layout_alignParentEnd="true" />
@@ -251,6 +251,7 @@
                 android:layout_width="60dp"
                 android:layout_height="60dp"
                 android:background="@drawable/bsave"
+                android:visibility="invisible"
                 android:layout_centerVertical="true"
                 android:layout_centerHorizontal="true"/>
 
