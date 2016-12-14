@@ -59,8 +59,9 @@ public class MainAqua extends Activity implements OnReceiveListener{
     private final byte CMD_GET_STATE     = (byte)0x10;
     private final byte CMD_GET_STATE_ANS = (byte)0x11;
 
-    private final byte CMD_GET_CFG   = (byte)0x20;
-    private final byte CMD_SET_CFG   = (byte)0x21;
+    private final byte CMD_GET_CFG       = (byte)0x20;
+    private final byte CMD_SET_CFG       = (byte)0x21;
+    private final byte CMD_GET_CFG_ANS   = (byte)0x22;
 
     private Timer mTimer;
     private MyTimerTask mMyTimerTask;
@@ -170,30 +171,32 @@ public class MainAqua extends Activity implements OnReceiveListener{
     //==============================================================================================
     byte []  getCfgPack()
     {
-        byte[]tmp = new byte[20];
+        byte[]tmp = new byte[21];
         byte[]ttmp = new byte[2];
+
+        tmp[0] = (byte)(CMD_SET_CFG);
         //==== set temperature ==========
         int a = (int)(Float.valueOf(tvTempS.getText().toString().replace("\u00b0","")) * 10);
-        tmp[0] = (byte)(a & 0xff);
-        tmp[1] = (byte)((a >> 8) & 0xff);
+        tmp[1] = (byte)(a & 0xff);
+        tmp[2] = (byte)((a >> 8) & 0xff);
         //======== light configs ==========
         ttmp = getBytesfromTimeString(tvDayTime.getText().toString());
-        tmp[2] = ttmp[0];
-        tmp[3] = ttmp[1];
-        tmp[4] = Byte.valueOf((tvDayLight.getText().toString()).replace("%",""));
+        tmp[3] = ttmp[0];
+        tmp[4] = ttmp[1];
+        tmp[5] = Byte.valueOf((tvDayLight.getText().toString()).replace("%",""));
         ttmp = getBytesfromTimeString(tvNightTime.getText().toString());
-        tmp[5] = ttmp[0];
-        tmp[6] = ttmp[1];
-        tmp[7] = Byte.valueOf((tvNightLight.getText().toString()).replace("%",""));
+        tmp[6] = ttmp[0];
+        tmp[7] = ttmp[1];
+        tmp[8] = Byte.valueOf((tvNightLight.getText().toString()).replace("%",""));
         //======== peripherial configs ====
         for(int i = 0; i < names.length; i++)
         {
             ttmp = getBytesfromTimeString(start[i]);
-            tmp[i*4 + 8] = ttmp[0];
-            tmp[i*4 + 9] = ttmp[1];
+            tmp[i*4 + 9] = ttmp[0];
+            tmp[i*4 + 10] = ttmp[1];
             ttmp = getBytesfromTimeString(stop[i]);
-            tmp[i*4 + 10] = ttmp[0];
-            tmp[i*4 + 11] = ttmp[1];
+            tmp[i*4 + 11] = ttmp[0];
+            tmp[i*4 + 12] = ttmp[1];
         }
         return tmp;
     }
@@ -212,8 +215,9 @@ public class MainAqua extends Activity implements OnReceiveListener{
         switch (aCmd) {
 
             case CMD_GET_STATE:
+            case CMD_GET_CFG:
                 pack = new byte[1];
-                pack[0] = (byte) 0x10;
+                pack[0] = (byte) aCmd;
                 break;
 
             case CMD_SET_CFG:
@@ -271,7 +275,10 @@ public class MainAqua extends Activity implements OnReceiveListener{
                     else                                 imgDayPeriod.setImageResource(R.drawable.moon);
                     break;
 
-                case CMD_GET_CFG:
+                case CMD_GET_CFG_ANS: {
+                    short a = (short) ((in[2] & 0xff) | ((in[3] & 0xff) << 8));
+                    tvTempS.setText((float) a / 10 + "°");
+                }
                     break;
             }
         }
@@ -548,6 +555,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
     protected void onDestroy() {
         super.onDestroy();
         udpProcessor.stop();
+        mTimer.cancel();
     }
 
 }

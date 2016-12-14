@@ -205,7 +205,7 @@
             android:layout_weight="1"
             android:background="@layout/border"
             android:gravity="center"
-            android:text="06.12.16 13:07"
+            android:text="13:07:23"
             android:textSize="25dp"
             android:textColor="#ffff00"
             android:shadowDx="3"
