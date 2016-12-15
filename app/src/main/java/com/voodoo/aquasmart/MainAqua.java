@@ -57,6 +57,8 @@ public class MainAqua extends Activity implements OnReceiveListener{
     private final String ATTRIBUTE_TIME_START = "tStart";
     private final String ATTRIBUTE_TIME_STOP = "tStop";
 
+    private final byte OK_ANS            = (byte)0xaa;
+
     private final byte CMD_GET_STATE     = (byte)0x10;
     private final byte CMD_GET_STATE_ANS = (byte)0x11;
 
@@ -95,7 +97,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
         // находим список
         lvMain = (ListView) findViewById(R.id.lvPeripherial);
 
-        listUpdate();
+        //listUpdate();
         //==========================================================
         lvMain.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view,
@@ -106,12 +108,11 @@ public class MainAqua extends Activity implements OnReceiveListener{
 
         tvTemp = (TextView) findViewById(R.id.tvTemp);
         tvTempS = (TextView) findViewById(R.id.tvTempS);
-//        tvTemp.setText("23.0\u00b0");
-//        tvTempS.setText("22.5\u00b0");
 
         tvTempS.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Dialog_temperature();
+                if(cfgTrue)
+                    Dialog_temperature();
             }
         });
 
@@ -120,13 +121,15 @@ public class MainAqua extends Activity implements OnReceiveListener{
 
         llDay.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Dialog_period(true);
+                if(cfgTrue)
+                    Dialog_period(true);
             }
         });
 
         llNight.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Dialog_period(false);
+                if(cfgTrue)
+                    Dialog_period(false);
             }
         });
 
@@ -216,9 +219,20 @@ public class MainAqua extends Activity implements OnReceiveListener{
         switch (aCmd) {
 
             case CMD_GET_STATE:
-            case CMD_GET_CFG:
                 pack = new byte[1];
                 pack[0] = (byte) aCmd;
+                break;
+
+            case CMD_GET_CFG:
+                pack = new byte[4];
+                pack[0] = (byte) aCmd;
+                Calendar calendar = Calendar.getInstance();
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
+                        "HH:mm:ss", Locale.getDefault());
+                String strDate = simpleDateFormat.format(calendar.getTime());
+                pack[1] =  Byte.valueOf(strDate.substring(0,2));
+                pack[2] =  Byte.valueOf(strDate.substring(3,5));
+                pack[3] =  Byte.valueOf(strDate.substring(6));
                 break;
 
             case CMD_SET_CFG:
@@ -255,6 +269,8 @@ public class MainAqua extends Activity implements OnReceiveListener{
         udpProcessor.send(ip,df);
     }
     //==============================================================================================
+    boolean cfgTrue = false;
+    //==============================================================================================
     public void onFrameReceived(InetAddress ip, IDataFrame frame)
     {
         byte[] in = frame.getFrameData();
@@ -262,18 +278,28 @@ public class MainAqua extends Activity implements OnReceiveListener{
         {
             switch (in[1])
             {
+                case OK_ANS:
+                    btnSave.setVisibility(View.INVISIBLE);
+                    break;
+
                 case CMD_GET_STATE_ANS:
                     if(deviceIP == null) deviceIP = ip;
 
-                    tvDate.setText(in[2] + ":" + in[3] + ":" + in[4]);
+                    String e = "", ee = "";
+                    if(in[3] < 10) e = "0";
+                    if(in[4] < 10) ee = "0";
+                    tvDate.setText(in[2] + ":" + e + in[3] + ":" + ee + in[4]);
                     short tmp = (short)((in[5] & 0xff) | ((in[6] &0xff) << 8));
                     tvTemp.setText((float)tmp/10 + "°");
-                    int cur = in[2] * 60 + in[3];
-                    int day = getMinutes(tvDayTime.getText().toString());
-                    int nig = getMinutes(tvNightTime.getText().toString());
-                    if      (cur >= day && cur >= nig)   imgDayPeriod.setImageResource(R.drawable.moon);
-                    else if (cur >= day)                 imgDayPeriod.setImageResource(R.drawable.sun);
-                    else                                 imgDayPeriod.setImageResource(R.drawable.moon);
+                    if(cfgTrue) {
+                        int cur = in[2] * 60 + in[3];
+                        int day = getMinutes(tvDayTime.getText().toString());
+                        int nig = getMinutes(tvNightTime.getText().toString());
+                        if (cur >= day && cur >= nig)
+                            imgDayPeriod.setImageResource(R.drawable.moon);
+                        else if (cur >= day) imgDayPeriod.setImageResource(R.drawable.sun);
+                        else imgDayPeriod.setImageResource(R.drawable.moon);
+                    }
                     break;
 
                 case CMD_GET_CFG_ANS: {
@@ -281,17 +307,17 @@ public class MainAqua extends Activity implements OnReceiveListener{
                     tvTempS.setText((float) a / 10 + "°");
 
                     tvDayTime.setText(getTimeString(in[4], in[5]));
-                    tvDayLight.setText(in[6]);
+                    tvDayLight.setText(in[6] + "%");
                     tvNightTime.setText(getTimeString(in[7], in[8]));
-                    tvNightLight.setText(in[9]);
+                    tvNightLight.setText(in[9] + "%");
 
-                    for(int i = 1; i < 3; i++)
+                    for(int i = 0; i < 3; i++)
                     {
-                        start[i] = getTimeString(in[i * 4 + 9],  in[i * 4 + 10]);
-                        stop[i]  = getTimeString(in[i * 4 + 11], in[i * 4 + 12]);
+                        start[i] = getTimeString(in[i * 4 + 10],  in[i * 4 + 11]);
+                        stop[i]  = getTimeString(in[i * 4 + 12],  in[i * 4 + 13]);
                     }
                     listUpdate();
-
+                    cfgTrue = true;
                     btnSave.setVisibility(View.INVISIBLE);
                 }
                     break;
@@ -565,11 +591,6 @@ public class MainAqua extends Activity implements OnReceiveListener{
 
         @Override
         public void run() {
-//            Calendar calendar = Calendar.getInstance();
-//            SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
-//                    "HH:mm:ss", Locale.getDefault());
-//            final String strDate = simpleDateFormat.format(calendar.getTime());
-
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -584,6 +605,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
         super.onDestroy();
         udpProcessor.stop();
         mTimer.cancel();
+        cfgTrue = false;
     }
 
 }
