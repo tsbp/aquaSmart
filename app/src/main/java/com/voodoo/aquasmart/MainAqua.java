@@ -5,21 +5,25 @@ import android.app.AlertDialog;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.SimpleAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
@@ -65,6 +69,9 @@ public class MainAqua extends Activity implements OnReceiveListener{
     private final byte CMD_GET_CFG       = (byte)0x20;
     private final byte CMD_SET_CFG       = (byte)0x21;
     private final byte CMD_GET_CFG_ANS   = (byte)0x22;
+
+    private final byte CMD_GET_WIFI      = (byte)0x30;
+    private final byte CMD_SET_WIFI      = (byte)0x31;
 
     private Timer mTimer;
     private MyTimerTask mMyTimerTask;
@@ -238,6 +245,14 @@ public class MainAqua extends Activity implements OnReceiveListener{
             case CMD_SET_CFG:
                 pack = getCfgPack();
                 break;
+
+            case CMD_SET_WIFI:
+                byte [] tmp = wCfgStr.getBytes();
+                pack = new byte[wCfgStr.length() + 1];
+                pack[0] = (byte) aCmd;
+                for(int i = 0; i < wCfgStr.length(); i++)
+                    pack[i + 1] = tmp[i];
+                break;
         }
         if(aIP != null && pack != null) udpSend(pack, aIP);
     }
@@ -291,15 +306,8 @@ public class MainAqua extends Activity implements OnReceiveListener{
                     tvDate.setText(in[2] + ":" + e + in[3] + ":" + ee + in[4]);
                     short tmp = (short)((in[5] & 0xff) | ((in[6] &0xff) << 8));
                     tvTemp.setText((float)tmp/10 + "°");
-                    if(cfgTrue) {
-                        int cur = in[2] * 60 + in[3];
-                        int day = getMinutes(tvDayTime.getText().toString());
-                        int nig = getMinutes(tvNightTime.getText().toString());
-                        if (cur >= day && cur >= nig)
-                            imgDayPeriod.setImageResource(R.drawable.moon);
-                        else if (cur >= day) imgDayPeriod.setImageResource(R.drawable.sun);
-                        else imgDayPeriod.setImageResource(R.drawable.moon);
-                    }
+                    if(in[7] > 0) imgDayPeriod.setImageResource(R.drawable.sun);
+                    else          imgDayPeriod.setImageResource(R.drawable.moon);
                     break;
 
                 case CMD_GET_CFG_ANS: {
@@ -333,6 +341,11 @@ public class MainAqua extends Activity implements OnReceiveListener{
         return a + aHour + ":" + b + aMinute;
     }
     //==============================================================================================
+    private String[] wifiMode= {"NULL_MODE","STATION_MODE","SOFTAP_MODE","STATIONAP_MODE"};
+    private String[] wifiSecurityMode = {"AUTH_OPEN","AUTH_WEP","AUTH_WPA_PSK","AUTH_WPA2_PSK","AUTH_WPA_WPA2_PSK","AUTH_MAX"};
+    byte wMode, wSecur;
+    String wCfgStr;
+    //==============================================================================================
     void dialog_wifi() {
         final AlertDialog.Builder popDialog = new AlertDialog.Builder(this);
         final LayoutInflater inflater = (LayoutInflater) this.getSystemService(LAYOUT_INFLATER_SERVICE);
@@ -342,14 +355,82 @@ public class MainAqua extends Activity implements OnReceiveListener{
         popDialog.setTitle("Установки wifi");
         popDialog.setView(Viewlayout);
 
+        final EditText ssid = (EditText) Viewlayout.findViewById(R.id.etSSID);
+        ssid.clearFocus();
+        final EditText ssidPass = (EditText) Viewlayout.findViewById(R.id.etSSIDPASS);
+        ssidPass.clearFocus();
+
+        ArrayAdapter<String> adapterW = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, wifiMode);
+        ArrayAdapter<String> adapterS = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, wifiSecurityMode);
+
+        Spinner spinnerW = (Spinner) Viewlayout.findViewById(R.id.spinwWifiMode);
+        Spinner spinnerS = (Spinner) Viewlayout.findViewById(R.id.spinSecur);
+
+        spinnerW.setAdapter(adapterW);
+        spinnerS.setAdapter(adapterS);
+
+        byte[]cfg = loadConfig();
+        if(cfg.length > 0)
+        {
+
+            spinnerS.setSelection((int)cfg[1]);
+            spinnerW.setSelection((int)cfg[0]);
+            String str = new String(cfg);
+            ssid.setText(str.substring(2,str.indexOf('$')));
+            ssidPass.setText(str.substring(str.indexOf('$') + 1, str.length()));
+        }
+
+        spinnerS.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view,
+                                       int position, long id) {
+                wSecur = (byte) position;
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> arg0) {
+            }
+        });
+
+        spinnerW.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view,
+                                       int position, long id) {
+                wMode = (byte) position;
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> arg0) {
+            }
+        });
+
         popDialog.setPositiveButton("OK",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
+                        wCfgStr = (char)wMode + "" + (char)wSecur + ssid.getText().toString() + "$" + ssidPass.getText().toString();
+                        saveConfig(wCfgStr);
+                        sendCmd(CMD_SET_WIFI, deviceIP);
                         dialog.dismiss();
                     }
                 });
         popDialog.create();
         popDialog.show();
+    }
+    //==============================================================================================
+    public static String configReference = "com.voodoo.aquasmart";
+    //==============================================================================================
+    void saveConfig(String aStr) {
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(configReference, aStr);
+
+        editor.apply();
+    }
+    //==============================================================================================
+    byte[] loadConfig() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        String conf = sharedPreferences.getString(configReference, "") ;
+        return conf.getBytes();
     }
     //==============================================================================================
     void listUpdate()

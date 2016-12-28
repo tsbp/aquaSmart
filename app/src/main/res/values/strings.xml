@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">aquaSmart</string>
+    <string name="delta">Дельта</string>
+    <string name="sens1">Тип первого датчика температуры</string>
+    <string name="sens2">Тип второго датчика температуры</string>
+    <string name="SSID">SSID</string>
+    <string name="SSIDPAS">SSIDPAS</string>
+    <string name="WIFI_MODE">Wifi mode</string>
+    <string name="security">Защита</string>
+    <string name="devMode"> Режим устройства</string>
+    <string name="setTemp"> Температура</string>
+    <string name="save"> Сохранить</string>
+    <string name="Done"> Done</string>
+    <string name="Swap"> Swap sensors</string>
+    <string name="addrRange"> Диапазон адресов</string>
 </resources>
