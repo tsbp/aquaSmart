@@ -235,6 +235,15 @@
                 android:layout_centerVertical="true"/>
 
             <Button
+                android:id="@+id/btnSet"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:visibility="invisible"
+                android:background="@drawable/settings"
+                android:layout_marginLeft="70dp"
+                android:layout_centerVertical="true"/>
+
+            <Button
                 android:id="@+id/btnLoad"
                 android:layout_width="60dp"
                 android:layout_height="60dp"

@@ -47,7 +47,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
 
     TextView tvTemp, tvTempS, tvDate, tvDayTime, tvNightTime, tvDayLight, tvNightLight;
     ImageView imgDayPeriod;
-    Button btnSave;
+    Button btnSave, btnSet;
 
     String[] names = { "Компрессор", "Фильтр", "Шаговик"};
     String[] titles_start = { "Старт", "Старт", "Eat 1"};
@@ -178,11 +178,45 @@ public class MainAqua extends Activity implements OnReceiveListener{
                 }
             }
         });
+        btnSet = (Button) findViewById(R.id.btnSet);
+        //================================================
+        btnSet.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                //if(deviceIP != null)
+                {
+                    stepperDialog();
+                }
+            }
+        });
+    }
+    //==============================================================================================
+    void stepperDialog()
+    {
+        final AlertDialog.Builder popDialog = new AlertDialog.Builder(this);
+        final LayoutInflater inflater = (LayoutInflater) this.getSystemService(LAYOUT_INFLATER_SERVICE);
+        final View Viewlayout = inflater.inflate(R.layout.stepper, (ViewGroup) findViewById(R.id.rl));
+
+        popDialog.setTitle("Stepper");
+        popDialog.setView(Viewlayout);
+
+        final EditText turns = (EditText) Viewlayout.findViewById(R.id.etTurns);
+        turns.setText(stepperTurnsCnt + "");
+
+        popDialog.setPositiveButton("OK",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        stepperTurnsCnt = Integer.valueOf(turns.getText().toString());
+                        btnSave.setVisibility(View.VISIBLE);
+                        dialog.dismiss();
+                    }
+                });
+        popDialog.create();
+        popDialog.show();
     }
     //==============================================================================================
     byte []  getCfgPack()
     {
-        byte[]tmp = new byte[21];
+        byte[]tmp = new byte[22];
         byte[]ttmp = new byte[2];
 
         tmp[0] = (byte)(CMD_SET_CFG);
@@ -209,6 +243,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
             tmp[i*4 + 11] = ttmp[0];
             tmp[i*4 + 12] = ttmp[1];
         }
+        tmp[21] = (byte) stepperTurnsCnt;
         return tmp;
     }
     //==============================================================================================
@@ -285,6 +320,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
     }
     //==============================================================================================
     boolean cfgTrue = false;
+    int stepperTurnsCnt;
     //==============================================================================================
     public void onFrameReceived(InetAddress ip, IDataFrame frame)
     {
@@ -324,9 +360,11 @@ public class MainAqua extends Activity implements OnReceiveListener{
                         start[i] = getTimeString(in[i * 4 + 10],  in[i * 4 + 11]);
                         stop[i]  = getTimeString(in[i * 4 + 12],  in[i * 4 + 13]);
                     }
+                    stepperTurnsCnt = in[22];
                     listUpdate();
                     cfgTrue = true;
                     btnSave.setVisibility(View.INVISIBLE);
+                    btnSet.setVisibility(View.VISIBLE);
                 }
                     break;
             }
