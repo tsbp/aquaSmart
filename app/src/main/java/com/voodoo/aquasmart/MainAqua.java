@@ -196,16 +196,20 @@ public class MainAqua extends Activity implements OnReceiveListener{
         final LayoutInflater inflater = (LayoutInflater) this.getSystemService(LAYOUT_INFLATER_SERVICE);
         final View Viewlayout = inflater.inflate(R.layout.stepper, (ViewGroup) findViewById(R.id.rl));
 
-        popDialog.setTitle("Stepper");
+        popDialog.setTitle("Настройки");
         popDialog.setView(Viewlayout);
 
         final EditText turns = (EditText) Viewlayout.findViewById(R.id.etTurns);
         turns.setText(stepperTurnsCnt + "");
 
+        final EditText eatMin = (EditText) Viewlayout.findViewById(R.id.etEatMin);
+        eatMin.setText(eatMinutes + "");
+
         popDialog.setPositiveButton("OK",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         stepperTurnsCnt = Integer.valueOf(turns.getText().toString());
+                        eatMinutes      = Integer.valueOf(eatMin.getText().toString());
                         btnSave.setVisibility(View.VISIBLE);
                         dialog.dismiss();
                     }
@@ -216,7 +220,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
     //==============================================================================================
     byte []  getCfgPack()
     {
-        byte[]tmp = new byte[22];
+        byte[]tmp = new byte[23];
         byte[]ttmp = new byte[2];
 
         tmp[0] = (byte)(CMD_SET_CFG);
@@ -244,6 +248,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
             tmp[i*4 + 12] = ttmp[1];
         }
         tmp[21] = (byte) stepperTurnsCnt;
+        tmp[22] = (byte) eatMinutes;
         return tmp;
     }
     //==============================================================================================
@@ -320,7 +325,7 @@ public class MainAqua extends Activity implements OnReceiveListener{
     }
     //==============================================================================================
     boolean cfgTrue = false;
-    int stepperTurnsCnt;
+    int stepperTurnsCnt, eatMinutes;
     //==============================================================================================
     public void onFrameReceived(InetAddress ip, IDataFrame frame)
     {
@@ -360,7 +365,8 @@ public class MainAqua extends Activity implements OnReceiveListener{
                         start[i] = getTimeString(in[i * 4 + 10],  in[i * 4 + 11]);
                         stop[i]  = getTimeString(in[i * 4 + 12],  in[i * 4 + 13]);
                     }
-                    stepperTurnsCnt = in[22];
+                    stepperTurnsCnt = (in[22] & 0xff);
+                    eatMinutes = (in[23] & 0xff);
                     listUpdate();
                     cfgTrue = true;
                     btnSave.setVisibility(View.INVISIBLE);
